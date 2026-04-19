@@ -58,11 +58,10 @@
             ];
 
             fhs = pkgs.buildFHSEnv {
-              name = "poetry-open3d-fhs";
+              name = "poetry-general-fhs";
               
               targetPkgs = pkgs: (with pkgs; [
                 python
-                poetry
                 pkg-config
                 gcc
                 gfortran
