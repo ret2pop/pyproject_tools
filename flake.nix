@@ -28,7 +28,20 @@
 
             python = pkgs.python312;
 
-            runtimeLibs = with pkgs; [
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+              gcc
+              gfortran
+              gnumake
+              cmake
+              ninja
+              patchelf
+              git
+              poetry
+            ];
+
+            # Shared libraries go here
+            buildInputs = with pkgs; [
               stdenv.cc.cc.lib
               zlib
               openssl
@@ -57,53 +70,38 @@
               xorg.libXrandr
             ];
 
-            fhs = pkgs.buildFHSEnv {
-              name = "poetry-general-fhs";
-              
-              targetPkgs = pkgs: (with pkgs; [
-                python
-                pkg-config
-                gcc
-                gfortran
-                gnumake
-                cmake
-                ninja
-                patchelf
-                git
-                poetry
-              ]) ++ runtimeLibs;
-
-              profile = ''
-                direnv allow
-                export CUDA_PATH="${pkgs.cudaPackages.cudatoolkit}"
-                export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
-                
-                export POETRY_VIRTUALENVS_CREATE="true"
-                export POETRY_VIRTUALENVS_IN_PROJECT="true"
-                
-                export PATH="${python}/bin:$PATH"
-
-                # FORCE X11 TO PREVENT OPEN3D WAYLAND CRASH
-                export WAYLAND_DISPLAY=""
-                export XDG_SESSION_TYPE="x11"
-
-                if [ -f pyproject.toml ]; then
-                  poetry env use ${python}/bin/python >/dev/null 2>&1 || true
-
-                  echo
-                  echo "Python: $(which python)"
-                  echo "Poetry env: $(poetry env info --path 2>/dev/null || true)"
-                  echo "Run once: poetry install"
-                  echo "Then:     poetry run python3 main.py"
-                  echo
-                fi
-              '';
-
-              runScript = "bash";
-            };
           in
             {
-              default = fhs.env;
+              default = pkgs.mkShell {
+                name = "poetry-general-shell";
+
+                packages = [ python ];
+                
+                inherit nativeBuildInputs buildInputs;
+                LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+
+                CUDA_PATH = "${pkgs.cudaPackages.cudatoolkit}";
+                CUDA_HOME = "${pkgs.cudaPackages.cudatoolkit}";
+                POETRY_VIRTUALENVS_CREATE = "true";
+                POETRY_VIRTUALENVS_IN_PROJECT = "true";
+                
+                WAYLAND_DISPLAY = "";
+                XDG_SESSION_TYPE = "x11";
+
+                shellHook = ''
+                  direnv allow 2>/dev/null || true
+
+                  if [ -f pyproject.toml ]; then
+                    poetry env use ${python}/bin/python >/dev/null 2>&1 || true
+                    echo
+                    echo "Python: $(which python)"
+                    echo "Poetry env: $(poetry env info --path 2>/dev/null || true)"
+                    echo "Run once: poetry install"
+                    echo "Then:     poetry run python3 main.py"
+                    echo
+                  fi
+                '';
+              };
             });
       };
 }
