@@ -61,6 +61,7 @@
               alsa-lib
               ffmpeg
               cudaPackages.cudatoolkit
+              portaudio
               cudaPackages.cudnn
               wayland
               mesa
