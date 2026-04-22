@@ -76,7 +76,11 @@
               default = pkgs.mkShell {
                 name = "poetry-general-shell";
 
-                packages = [ python ];
+                packages = [
+                  python
+                  pkgs.poetry
+                  pkgs.python312Packages.jedi
+                ];
                 
                 inherit nativeBuildInputs buildInputs;
                 LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
